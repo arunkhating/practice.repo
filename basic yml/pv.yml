@@ -14,3 +14,34 @@ spec:
   storageClassName: local-storage
   hostPath:
     path: /mnt/data
+-------------------------------
+
+## CREATING PV FOR AWS EBS WHICH IS MANUALLY CREATED THROUGH CONSOLE BY MENTIONING THE VOLUME ID
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: my-ebs-volume
+spec:
+  capacity:
+    storage: 10Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: gp3-storage
+  csi:
+    driver: ebs.csi.aws.com
+    volumeHandle: vol-0123456789abcdef0  # EBS volume ID
+    -------------------------------------------------------------
+
+    ## CREATING PVs DYNAMICALLY WHEN NEED THROUGH AWS EBS ALSO CALLED AS STORAGE CLASSES
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: gp3-storage
+provisioner: ebs.csi.aws.com  # CSI driver for AWS EBS
+parameters:
+  type: gp3  # Type of EBS volume
+  fsType: ext4
+reclaimPolicy: Delete  # Deletes the PV when PVC is deleted
+volumeBindingMode: WaitForFirstConsumer
