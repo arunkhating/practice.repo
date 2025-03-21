@@ -1,0 +1,57 @@
+def propertyInfo = [:]
+  def buildOptions = 'scm/build_options.txt'
+
+  node('master') {
+    stage('Checkout and set agent'){
+       checkout scm
+
+       def tmpInfo = readProperties file: "${buildOptions}"   //read properties into tmp Map
+       propertyInfo << tmpInfo      // append tmp Map to propertyInfo
+
+     }
+  }
+
+pipeline {
+  agent {
+    label propertyInfo.buildAgentLabel
+  }
+  stages {
+    stage('Checkout Source') {
+      steps {
+        checkout scm
+      }
+    }
+    stage('Build image') {
+      when {
+          expression { !env.BRANCH_NAME.contains ("PR-")}
+        }
+      steps {
+        container ( propertyInfo.buildContainerName ) {
+            script {
+              if (env.BRANCH_NAME == "master") {
+                dockerImage = docker.build( imageName + ":" + propertyInfo.releaseVersion + "." + "${env.BUILD_NUMBER}","--network host  .")
+              } else {
+                dockerImage = docker.build( imageName + ":" + env.BRANCH_NAME + "-" + "${env.BUILD_NUMBER}","--network host  .")
+          }
+         }     
+        }
+      }
+    }
+    stage('Push Image') {
+        steps {
+          container ( propertyInfo.buildContainerName ) {
+            script {
+              docker.withRegistry( "",registryCredential ) {
+                dockerImage.push()
+              }
+            }
+          }
+        }
+      }    
+  }
+  environment {
+    imageName = 'hipaasinc/ky_enrollment_frontend'
+    registryCredential = 'hipaasinc-dockerhub'
+    dockerImage = ''
+  }
+}
