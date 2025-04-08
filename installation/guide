@@ -33,7 +33,7 @@ sudo apt-get update -y
 sudo apt-get install jenkins -y
 sudo systemctl start jenkins
 sudo systemctl status jenkins
-
+sudo cat /var/lib/jenkins/secrets/initialAdminPassword
 Verifiy Jenkins installation: jenkins --version
 
 5.1. Open Port No. 8080 for VM and access Jenkins
